@@ -1,0 +1,8 @@
+*.vvp
+*.vcd
+*.v.save
+pipeline_cpu.v
+simple_cpu.v
+signals.txt
+view_signals.tcl
+cpu.gtkw
