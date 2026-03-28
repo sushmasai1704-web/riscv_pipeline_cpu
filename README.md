@@ -1,137 +1,135 @@
 # RISC-V 5-Stage Pipelined CPU (RV32I)
-Designed and verified using simulation with waveform-based validation.
-This project implements a 5-stage pipelined RISC-V (RV32I) processor in Verilog.
-The design focuses on efficient instruction execution using pipelining along with proper handling of data hazards through forwarding and stalling.
+
+A fully functional 5-stage pipelined RISC-V (RV32I) processor implemented in Verilog,
+verified using a self-checking testbench with waveform-based validation.
 
 ---
 
 ## Overview
 
-The processor follows the standard 5-stage pipeline architecture:
+The processor implements the classic 5-stage pipeline:
+```
+IF → ID → EX → MEM → WB
+```
 
-- Instruction Fetch (IF)
-- Instruction Decode (ID)
-- Execute (EX)
-- Memory Access (MEM)
-- Write Back (WB)
-
-Multiple instructions are processed simultaneously across different stages, improving overall throughput compared to a single-cycle design.
+Multiple instructions execute simultaneously across different stages,
+improving throughput over a single-cycle design.
 
 ---
 
 ## Key Features
 
-- Implementation of RV32I base instruction set
-- 5-stage pipeline design
-- Data forwarding to minimize stalls
-- Hazard detection unit for load-use cases
+- RV32I base instruction set (R-type, I-type, Load/Store, Branch, JAL)
+- Full data forwarding (EX→EX and MEM→EX paths)
+- Hazard detection unit for load-use stalls
 - Pipeline registers between all stages
-- Modular RTL design for clarity and scalability
-- Simulation using Verilog testbench
-- Supports basic arithmetic, logical, and memory access instructions from RV32I
-- Supports R-type, I-type, and load/store instructions
-
----
-
-## Pipeline Operation
-
-Instructions move through the pipeline stages in sequence:
-
-IF → ID → EX → MEM → WB
-
-At any given clock cycle, different instructions occupy different stages, allowing parallel execution.
-
----
-
-## Hazard Handling
-
-### Data Hazards
-Data dependencies between instructions are resolved using forwarding paths from later stages to earlier ones.
-
-### Load-Use Hazard
-When forwarding is not sufficient (e.g., load followed by dependent instruction), the hazard detection unit introduces a stall to ensure correct execution.
+- Modular RTL — one module per file
+- Self-checking testbench with pass/fail output
 
 ---
 
 ## Project Structure
+```
 riscv_pipeline_cpu/
-├── rtl/ # Verilog source files
-├── testbench/ # Testbench files
-├── sim/ # Simulation outputs
-├── docs/ # Diagrams and screenshots
+├── rtl/
+│   ├── pipeline_cpu.v   # Top-level pipeline
+│   ├── alu.v            # ALU (ADD, SUB, AND, OR, XOR, SLT)
+│   ├── control.v        # Control unit
+│   ├── imm_gen.v        # Immediate generator
+│   ├── reg_file.v       # Register file
+│   └── tb_cpu.v         # Self-checking testbench
+├── sim/                 # Simulation scripts
+├── tb/                  # Unit testbenches
+├── program.hex          # Test program (hex)
 └── README.md
+```
 
 ---
 
 ## How to Run
 
-### Compile
-iverilog -o cpu.vvp *.v
+### 1. Compile
+```bash
+iverilog -o sim/cpu.vvp \
+  rtl/pipeline_cpu.v \
+  rtl/alu.v \
+  rtl/control.v \
+  rtl/imm_gen.v \
+  rtl/tb_cpu.v
+```
 
-### Run Simulation
-vvp cpu.vvp
+### 2. Run Simulation
+```bash
+vvp sim/cpu.vvp
+```
 
-### View Waveforms
+### 3. View Waveforms
+```bash
 gtkwave dump.vcd
+```
 
 ---
 
-## Results
+## Verified Test Results
+```
+========== FINAL RESULTS ==========
+x1  = 36 (Expected: 36 - JAL return address) ✓
+x2  = 30 (Expected: 30) ✓
+x3  = 30 (Expected: 30) ✓
+x4  = 50 (Expected: 50) ✓
+x5  = 40 (Expected: 40) ✓
+mem[0] = 50 (Expected: 50) ✓
+====================================
 
-The processor was verified using simulation with multiple instruction sequences.
+========== TEST STATUS ==========
+ALL TESTS PASSED ✓
+=================================
+```
 
-- Correct execution of arithmetic and memory instructions was observed  
-- Pipeline stages showed proper overlap across clock cycles  
-- Data hazards were resolved using forwarding without unnecessary stalls  
-- Load-use hazards correctly introduced pipeline stalls  
+Instructions tested: ADDI, ADD, SW, LW, BEQ, JAL — covering
+arithmetic, memory access, branching, and jump-and-link.
 
-### Example
+---
 
-Instruction sequence:
-ADD x1, x2, x3  
-SUB x4, x1, x5  
+## Hazard Handling
 
-The second instruction uses the result of the first. Forwarding ensures correct execution without stalling.
+### Data Hazards — Forwarding
+Results are forwarded from EX/MEM and MEM/WB stage registers
+back to the EX stage ALU inputs, eliminating unnecessary stalls.
 
-Waveform analysis confirms:
-- Correct register updates  
-- Proper stage-wise instruction movement  
-- Hazard handling as expected  
-<img width="1646" height="792" alt="image" src="https://github.com/user-attachments/assets/2cb2d80d-bf76-4b9e-8eb0-f5ad9be88e2a" />
+**Example:**
+```
+ADD x1, x2, x3   # result in EX at cycle N
+SUB x4, x1, x5   # needs x1 — forwarded from EX/MEM register
+```
 
-<img width="1918" height="1073" alt="image" src="https://github.com/user-attachments/assets/1411caf4-486a-465f-9840-7914db3881c7" />
+### Load-Use Hazard — Stall
+When a load is immediately followed by a dependent instruction,
+forwarding alone is insufficient. The hazard detection unit stalls
+the pipeline for one cycle, then forwards from MEM/WB.
+```
+LW  x5, 0(x1)    # data ready after MEM stage
+ADD x6, x5, x2   # stall inserted, then MEM→EX forward
+```
 
 ---
 
 ## Tools Used
 
-- Verilog HDL  
-- Icarus Verilog  
-- GTKWave  
-
----
-
-## What I Learned
-
-- Designing a pipelined processor from scratch  
-- Handling data hazards using forwarding and stalling  
-- Structuring modular RTL for complex systems  
-- Debugging using simulation waveforms  
+- Verilog HDL
+- Icarus Verilog (iverilog)
+- GTKWave
 
 ---
 
 ## Possible Improvements
 
-- Branch handling and prediction  
-- Cache integration  
-- Support for additional RISC-V instructions  
-- Performance optimization  
+- Branch prediction (2-bit saturating counter BHT)
+- Instruction/data cache integration
+- Full RV32I instruction support (shifts, AUIPC, LUI)
+- Performance counters (CPI tracking)
 
 ---
-
-## Summary
-
-This project demonstrates practical understanding of pipelined processor design, hazard handling, and RTL implementation using Verilog.
 
 ## Author
 
