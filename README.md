@@ -1,6 +1,6 @@
 # RISC-V 5-Stage Pipelined CPU (RV32I)
-
-This project implements a 5-stage pipelined RISC-V (RV32I) processor in Verilog.  
+Designed and verified using simulation with waveform-based validation.
+This project implements a 5-stage pipelined RISC-V (RV32I) processor in Verilog.
 The design focuses on efficient instruction execution using pipelining along with proper handling of data hazards through forwarding and stalling.
 
 ---
@@ -28,6 +28,7 @@ Multiple instructions are processed simultaneously across different stages, impr
 - Pipeline registers between all stages
 - Modular RTL design for clarity and scalability
 - Simulation using Verilog testbench
+- Supports R-type, I-type, and load/store instructions
 
 ---
 
@@ -55,8 +56,8 @@ When forwarding is not sufficient (e.g., load followed by dependent instruction)
 riscv_pipeline_cpu/
 ├── rtl/ # Verilog source files
 ├── testbench/ # Testbench files
-├── sim/ # Simulation outputs (VCD, logs)
-├── docs/ # Diagrams or notes
+├── sim/ # Simulation outputs
+├── docs/ # Diagrams and screenshots
 └── README.md
 
 ---
