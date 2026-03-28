@@ -28,6 +28,7 @@ Multiple instructions are processed simultaneously across different stages, impr
 - Pipeline registers between all stages
 - Modular RTL design for clarity and scalability
 - Simulation using Verilog testbench
+- Supports basic arithmetic, logical, and memory access instructions from RV32I
 - Supports R-type, I-type, and load/store instructions
 
 ---
@@ -127,6 +128,10 @@ Waveform analysis confirms:
 - Performance optimization  
 
 ---
+
+## Summary
+
+This project demonstrates practical understanding of pipelined processor design, hazard handling, and RTL implementation using Verilog.
 
 ## Author
 
