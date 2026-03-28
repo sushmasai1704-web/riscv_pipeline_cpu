@@ -1,0 +1,19 @@
+rm -f cpu.vvp dump.vcd`timescale 1ns/1ps module simple_cpu_tb; iverilog -o cpu.vvp rtl/simple_cpu.v 
+rtl/simple_cpu_tb.v vvp cpu.vvp reg clk; gtkwave dump.vcd\ reg rst;
+
+    simple_cpu cpu_inst(.clk(clk), .rst(rst));
+
+    // Clock generation
+    initial clk = 0;
+    always #5 clk = ~clk; // 10ns period
+
+    initial begin
+    $dumpfile("dump.vcd");        
+    $dumpvars(0, simple_cpu_tb);  
+
+    rst = 1;
+    #10 rst = 0;
+    #150 $finish;
+    end
+
+endmodule
