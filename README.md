@@ -76,10 +76,25 @@ gtkwave dump.vcd
 
 ## Results
 
-- Verified correct instruction execution through simulation
-- Observed proper pipeline flow across all stages
-- Confirmed hazard handling using waveform analysis
+The processor was verified using simulation with multiple instruction sequences.
 
+- Correct execution of arithmetic and memory instructions was observed  
+- Pipeline stages showed proper overlap across clock cycles  
+- Data hazards were resolved using forwarding without unnecessary stalls  
+- Load-use hazards correctly introduced pipeline stalls  
+
+### Example
+
+Instruction sequence:
+ADD x1, x2, x3  
+SUB x4, x1, x5  
+
+The second instruction uses the result of the first. Forwarding ensures correct execution without stalling.
+
+Waveform analysis confirms:
+- Correct register updates  
+- Proper stage-wise instruction movement  
+- Hazard handling as expected  
 <img width="1646" height="792" alt="image" src="https://github.com/user-attachments/assets/2cb2d80d-bf76-4b9e-8eb0-f5ad9be88e2a" />
 
 <img width="1918" height="1073" alt="image" src="https://github.com/user-attachments/assets/1411caf4-486a-465f-9840-7914db3881c7" />
