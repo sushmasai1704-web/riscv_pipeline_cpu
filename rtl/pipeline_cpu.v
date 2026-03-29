@@ -185,12 +185,8 @@ module pipeline_cpu(
     reg  [31:0] regs [0:31];
     wire [31:0] reg_rdata1, reg_rdata2;
 
-    assign reg_rdata1 = (IF_ID_rs1 == 0) ? 32'h0 :
-                       (reg_write_wb && reg_waddr_wb == IF_ID_rs1) ? reg_wdata_wb :
-                       regs[IF_ID_rs1];
-    assign reg_rdata2 = (IF_ID_rs2 == 0) ? 32'h0 :
-                       (reg_write_wb && reg_waddr_wb == IF_ID_rs2) ? reg_wdata_wb :
-                       regs[IF_ID_rs2];
+    assign reg_rdata1 = (IF_ID_rs1 == 0) ? 32'h0 : regs[IF_ID_rs1];
+    assign reg_rdata2 = (IF_ID_rs2 == 0) ? 32'h0 : regs[IF_ID_rs2];
 
     integer k;
     initial begin
@@ -318,7 +314,7 @@ module pipeline_cpu(
         endcase
     end
 
-    assign wb_data = (MEM_WB_mem_to_reg) ? MEM_WB_mem_data : MEM_WB_alu_result;
+    assign wb_data = MEM_WB_jal ? MEM_WB_pc_plus4 : (MEM_WB_mem_to_reg) ? MEM_WB_mem_data : MEM_WB_alu_result;
 
     assign forward_a_sel =
         (EX_MEM_reg_write && (EX_MEM_rd != 0) && (EX_MEM_rd == ID_EX_rs1)) ? 2'b10 :
