@@ -70,6 +70,7 @@ module pipeline_cpu(
     wire [4:0]  MEM_WB_rd;
     wire        MEM_WB_jal;
     wire [31:0] MEM_WB_pc_plus4;
+    wire        MEM_WB_mem_write;
 
     // ============================================================
     // BRANCH PREDICTOR INSTANCE (now PC is declared)
@@ -412,6 +413,7 @@ module pipeline_cpu(
     reg [4:0]  r_MEM_WB_rd;
     reg        r_MEM_WB_mem_to_reg, r_MEM_WB_reg_write;
     reg        r_MEM_WB_jal;
+    reg        r_MEM_WB_mem_write;
 
     assign MEM_WB_alu_result = r_MEM_WB_alu_result;
     assign MEM_WB_mem_data   = r_MEM_WB_mem_data;
@@ -419,6 +421,7 @@ module pipeline_cpu(
     assign MEM_WB_reg_write  = r_MEM_WB_reg_write;
     assign MEM_WB_rd         = r_MEM_WB_rd;
     assign MEM_WB_jal        = r_MEM_WB_jal;
+    assign MEM_WB_mem_write  = r_MEM_WB_mem_write;
     assign MEM_WB_pc_plus4   = r_MEM_WB_pc_plus4;
 
     always @(posedge clk or posedge rst) begin
@@ -430,6 +433,7 @@ module pipeline_cpu(
             r_MEM_WB_mem_to_reg <= 1'b0;
             r_MEM_WB_reg_write  <= 1'b0;
             r_MEM_WB_jal        <= 1'b0;
+            r_MEM_WB_mem_write  <= 1'b0;
         end else begin
             r_MEM_WB_alu_result <= EX_MEM_alu_result;
             r_MEM_WB_mem_data   <= mem_read_data;
@@ -438,6 +442,7 @@ module pipeline_cpu(
             r_MEM_WB_mem_to_reg <= r_EX_MEM_mem_to_reg;
             r_MEM_WB_reg_write  <= r_EX_MEM_reg_write;
             r_MEM_WB_jal        <= r_EX_MEM_jal;
+            r_MEM_WB_mem_write  <= r_EX_MEM_mem_write;
         end
     end
 
@@ -478,7 +483,7 @@ module pipeline_cpu(
             stall_count <= stall_count + 1;
     end
 
-    wire wb_valid = MEM_WB_reg_write && (MEM_WB_rd != 5'h0);
+    wire wb_valid = (MEM_WB_reg_write && (MEM_WB_rd != 5'h0)) || MEM_WB_mem_write;
     always @(posedge clk or posedge rst) begin
         if (rst)
             instr_count <= 32'h0;
