@@ -1,5 +1,5 @@
 # RISC-V 5-Stage Pipelined CPU (RV32I)
-
+ 
 A fully functional 5-stage pipelined RISC-V (RV32I) processor implemented in Verilog,
 featuring a 2-bit saturating counter branch predictor, full data forwarding, and hazard detection.
 Verified using a self-checking testbench with waveform-based validation.
