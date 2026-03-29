@@ -145,8 +145,8 @@ was correctly killed. 2-cycle branch penalty on taken branches.
 - Instruction/data cache integration
 - Full RV32I instruction support (shifts, AUIPC, LUI)
 - Performance counters (CPI tracking)
-
----
+- 2-bit saturating counter branch predictor (reduce 2-cycle penalty)
+...
 
 ## Author
 
