@@ -69,6 +69,9 @@ vvp sim/cpu.vvp
 ```bash
 gtkwave dump.vcd
 ```
+<img width="1918" height="1073" alt="image" src="https://github.com/user-attachments/assets/0db5977e-159d-4fca-a1ab-7e2c0c7f0dc8" />
+
+<img width="1646" height="792" alt="image" src="https://github.com/user-attachments/assets/fb872e42-c9cf-43a0-849a-9a7436f4bbce" />
 
 ---
 
