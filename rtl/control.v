@@ -10,7 +10,9 @@ module control(
     output reg       mem_write,
     output reg       branch,
     output reg       jal,
-    output reg       jalr
+    output reg       jalr,
+    output reg       lui,
+    output reg       auipc
 );
 
     // Opcode definitions
@@ -33,6 +35,8 @@ module control(
         branch     = 1'b0;
         jal        = 1'b0;
         jalr       = 1'b0;
+        lui        = 1'b0;
+        auipc      = 1'b0;
 
         case (opcode)
             OP_IMM: begin
@@ -63,6 +67,12 @@ module control(
                 jalr      = 1'b1;
                 alu_src   = 1'b1;
                 reg_write = 1'b1;
+            end
+            7'b0110111: begin // LUI
+                alu_src=1'b1; reg_write=1'b1; lui=1'b1;
+            end
+            7'b0010111: begin // AUIPC
+                alu_src=1'b1; reg_write=1'b1; auipc=1'b1;
             end
             default: ;
         endcase

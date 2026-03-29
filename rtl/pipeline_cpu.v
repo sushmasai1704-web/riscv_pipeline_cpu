@@ -41,6 +41,7 @@ module pipeline_cpu(
     wire        ID_EX_alu_src, ID_EX_mem_to_reg, ID_EX_reg_write;
     wire        ID_EX_mem_read, ID_EX_mem_write, ID_EX_branch;
     wire        ID_EX_jal, ID_EX_jalr;
+    wire        ID_EX_lui, ID_EX_auipc;
     wire        ID_EX_predict_taken;
     wire [31:0] ID_EX_predict_target;
     wire [2:0]  ID_EX_funct3;
@@ -159,6 +160,7 @@ module pipeline_cpu(
     wire        ctrl_alu_src, ctrl_mem_to_reg, ctrl_reg_write;
     wire        ctrl_mem_read, ctrl_mem_write, ctrl_branch;
     wire        ctrl_jal, ctrl_jalr;
+    wire        ctrl_lui, ctrl_auipc;
 
     control ctrl_inst(
         .opcode    (IF_ID_opcode),
@@ -170,7 +172,9 @@ module pipeline_cpu(
         .mem_write (ctrl_mem_write),
         .branch    (ctrl_branch),
         .jal       (ctrl_jal),
-        .jalr      (ctrl_jalr)
+        .jalr      (ctrl_jalr),
+        .lui       (ctrl_lui),
+        .auipc     (ctrl_auipc)
     );
 
     imm_gen imm_gen_inst(
@@ -181,8 +185,12 @@ module pipeline_cpu(
     reg  [31:0] regs [0:31];
     wire [31:0] reg_rdata1, reg_rdata2;
 
-    assign reg_rdata1 = (IF_ID_rs1 == 0) ? 32'h0 : regs[IF_ID_rs1];
-    assign reg_rdata2 = (IF_ID_rs2 == 0) ? 32'h0 : regs[IF_ID_rs2];
+    assign reg_rdata1 = (IF_ID_rs1 == 0) ? 32'h0 :
+                       (reg_write_wb && reg_waddr_wb == IF_ID_rs1) ? reg_wdata_wb :
+                       regs[IF_ID_rs1];
+    assign reg_rdata2 = (IF_ID_rs2 == 0) ? 32'h0 :
+                       (reg_write_wb && reg_waddr_wb == IF_ID_rs2) ? reg_wdata_wb :
+                       regs[IF_ID_rs2];
 
     integer k;
     initial begin
@@ -215,6 +223,7 @@ module pipeline_cpu(
     reg        r_ID_EX_alu_src, r_ID_EX_mem_to_reg, r_ID_EX_reg_write;
     reg        r_ID_EX_mem_read, r_ID_EX_mem_write, r_ID_EX_branch;
     reg        r_ID_EX_jal, r_ID_EX_jalr;
+    reg        r_ID_EX_lui, r_ID_EX_auipc;
     reg        r_ID_EX_predict_taken;
     reg [31:0] r_ID_EX_predict_target;
 
@@ -236,11 +245,13 @@ module pipeline_cpu(
     assign ID_EX_branch = r_ID_EX_branch;
     assign ID_EX_jal = r_ID_EX_jal;
     assign ID_EX_jalr = r_ID_EX_jalr;
+    assign ID_EX_lui   = r_ID_EX_lui;
+    assign ID_EX_auipc = r_ID_EX_auipc;
     assign ID_EX_predict_taken = r_ID_EX_predict_taken;
     assign ID_EX_predict_target = r_ID_EX_predict_target;
 
     always @(posedge clk or posedge rst) begin
-        if (rst || stall || flush_if_id) begin
+        if (rst || stall) begin
             r_ID_EX_pc             <= 32'h0;
             r_ID_EX_reg_rdata1     <= 32'h0;
             r_ID_EX_reg_rdata2     <= 32'h0;
@@ -259,6 +270,8 @@ module pipeline_cpu(
             r_ID_EX_branch         <= 1'b0;
             r_ID_EX_jal            <= 1'b0;
             r_ID_EX_jalr           <= 1'b0;
+            r_ID_EX_lui            <= 1'b0;
+            r_ID_EX_auipc          <= 1'b0;
             r_ID_EX_predict_taken  <= 1'b0;
             r_ID_EX_predict_target <= 32'h0;
         end else begin
@@ -280,6 +293,8 @@ module pipeline_cpu(
             r_ID_EX_branch         <= ctrl_branch;
             r_ID_EX_jal            <= ctrl_jal;
             r_ID_EX_jalr           <= ctrl_jalr;
+            r_ID_EX_lui            <= ctrl_lui;
+            r_ID_EX_auipc          <= ctrl_auipc;
             r_ID_EX_predict_taken  <= IF_ID_predict_taken;
             r_ID_EX_predict_target <= IF_ID_predict_target;
         end
@@ -321,13 +336,14 @@ module pipeline_cpu(
         (forward_b_sel == 2'b10) ? EX_MEM_alu_result :
         (forward_b_sel == 2'b01) ? wb_data : ID_EX_reg_rdata2;
 
-    assign alu_in_a = forward_a_out;
+    assign alu_in_a = ID_EX_auipc ? ID_EX_pc  :
+                   ID_EX_lui   ? 32'h0     : forward_a_out;
     assign alu_in_b = ID_EX_alu_src ? ID_EX_imm : forward_b_out;
 
     alu alu_inst(
         .a       (alu_in_a),
         .b       (alu_in_b),
-        .alu_op  (ex_alu_op_sel),
+        .alu_op  ((ID_EX_lui || ID_EX_auipc) ? 4'b0000 : ex_alu_op_sel),
         .funct3  (ID_EX_funct3),
         .funct7_5(ID_EX_funct7_5),
         .result  (alu_result),
