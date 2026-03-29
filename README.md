@@ -78,13 +78,20 @@ gtkwave dump.vcd
 ## Verified Test Results
 ```
 ========== FINAL RESULTS ==========
-x1  = 36 (Expected: 36 - JAL return address) ✓
-x2  = 30 (Expected: 30) ✓
-x3  = 30 (Expected: 30) ✓
-x4  = 50 (Expected: 50) ✓
-x5  = 40 (Expected: 40) ✓
-mem[0] = 50 (Expected: 50) ✓
+x1  = 36 (Expected: 36 - JAL return address) PASS
+x2  = 30 (Expected: 30) PASS
+x3  = 30 (Expected: 30) PASS
+x4  = 50 (Expected: 50) PASS
+x5  = 40 (Expected: 40) PASS
+mem[0] = 50 (Expected: 50) PASS
 ====================================
+
+========== PERFORMANCE ==========
+Total cycles  : 30
+Instructions  : 10
+Stall cycles  : 0
+CPI           : 3.00
+=================================
 
 ========== TEST STATUS ==========
 ALL TESTS PASSED ✓
