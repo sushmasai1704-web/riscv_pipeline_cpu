@@ -8,7 +8,7 @@ module tb_cpu;
         $dumpfile("dump.vcd");
         $dumpvars(0, tb_cpu);
         rst = 1; #20 rst = 0;
-        #300;
+        wait(uut.instr_count == 8); repeat(4) @(posedge clk);
         $display("\n========== FINAL RESULTS ==========");
         if (uut.regs[1] === 32'd36) $display("x1  = %0d (Expected: 36) PASS", uut.regs[1]);
         else begin $display("x1  = %0d (Expected: 36) FAIL", uut.regs[1]); fail=fail+1; end

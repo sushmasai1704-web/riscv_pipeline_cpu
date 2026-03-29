@@ -491,7 +491,7 @@ module pipeline_cpu(
             branch_count <= 32'h0;
             mispredict_count <= 32'h0;
         end else begin
-            if (r_EX_MEM_branch) begin
+            if (ID_EX_branch || ID_EX_jal || ID_EX_jalr) begin
                 branch_count <= branch_count + 1;
                 if (mispredict)
                     mispredict_count <= mispredict_count + 1;
