@@ -106,12 +106,6 @@ Cycle | IF   | ID   | EX   | MEM  | WB   | Note
 ========== TEST STATUS ==========
 ALL TESTS PASSED ✓
 =================================
-```
-
-Instructions tested: ADDI, ADD, SW, LW, BEQ, JAL — covering
-arithmetic, memory access, branching, and jump-and-link.
-
----
 ## Performance Analysis
 
 | Metric | Value | Notes |
@@ -138,6 +132,13 @@ arithmetic, memory access, branching, and jump-and-link.
 | 12    | —   | —   | —   | I10 | I9  | Drain        |
 | 13    | —   | —   | —   | —   | I10 | Drain        |
 
+
+```
+
+Instructions tested: ADDI, ADD, SW, LW, BEQ, JAL — covering
+arithmetic, memory access, branching, and jump-and-link.
+
+---
 ## Hazard Handling
 
 ### Data Hazards — Forwarding
