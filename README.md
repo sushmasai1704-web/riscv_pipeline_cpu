@@ -145,7 +145,21 @@ was correctly killed. 2-cycle branch penalty on taken branches.
 - GTKWave
 
 ---
+## PERFORMANCE 
+Steady-state CPI     : 1.00  (cycles 6-25, 20 instructions)
+Overall CPI          : 3.00  (includes 4-cycle pipeline fill/drain)
+Stall cycles         : 0     (no load-use or branch hazards in this trace)
+Pipeline efficiency  : 100%  (5-stage overlap, no bubbles)
 
+Cycle | IF   | ID   | EX   | MEM  | WB   | Note
+------|------|------|------|------|------|-------------
+ 1    | I1   | -    | -    | -    | -    | Fill
+ 2    | I2   | I1   | -    | -    | -    | Fill
+ 3    | I3   | I2   | I1   | -    | -    | Fill
+ 4    | I4   | I3   | I2   | I1   | -    | Fill
+ 5    | I5   | I4   | I3   | I2   | I1   | Steady-state start
+...   | ...  | ...  | ...  | ...  | ...  | 1 CPI per instruction
+..
 ## Possible Improvements
 
 - Branch prediction (2-bit saturating counter BHT)
