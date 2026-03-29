@@ -116,11 +116,27 @@ arithmetic, memory access, branching, and jump-and-link.
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Steady-state CPI | 1.00 | Cycles 6-14, 9 instructions |
-| Overall CPI | 3.00 | Includes 4-cycle fill + 4-cycle drain |
-| Stall cycles | 0 | No hazards in this trace |
-| Pipeline efficiency | 100% | 5-stage overlap, no bubbles |
-...
+| Steady-state CPI | 1.00 | Cycles 6-14 (9 instructions) |
+| Overall CPI | 3.00 | Includes 4-cycle fill/drain |
+| Stall cycles | 0 | No load-use or branch hazards |
+| Pipeline efficiency | 100% | Full 5-stage overlap |
+
+### Pipeline Fill/Drain Visualization
+
+| Cycle | IF  | ID  | EX  | MEM | WB  | Phase        |
+| ----- | --- | --- | --- | --- | --- | ------------ |
+| 1     | I1  | —   | —   | —   | —   | Fill         |
+| 2     | I2  | I1  | —   | —   | —   | Fill         |
+| 3     | I3  | I2  | I1  | —   | —   | Fill         |
+| 4     | I4  | I3  | I2  | I1  | —   | Fill         |
+| 5     | I5  | I4  | I3  | I2  | I1  | Steady-state |
+| 6     | I6  | I5  | I4  | I3  | I2  | Steady-state |
+| ...   | ... | ... | ... | ... | ... | 1.0 CPI      |
+| 9     | I10 | I9  | I8  | I7  | I6  | Steady-state |
+| 10    | —   | I10 | I9  | I8  | I7  | Drain        |
+| 11    | —   | —   | I10 | I9  | I8  | Drain        |
+| 12    | —   | —   | —   | I10 | I9  | Drain        |
+| 13    | —   | —   | —   | —   | I10 | Drain        |
 
 ## Hazard Handling
 
