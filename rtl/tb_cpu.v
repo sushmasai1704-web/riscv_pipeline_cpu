@@ -8,14 +8,20 @@ module tb_cpu;
         $dumpfile("dump.vcd");
         $dumpvars(0, tb_cpu);
         rst = 1; #20 rst = 0;
-        #200;
+        #300;
         $display("\n========== FINAL RESULTS ==========");
-        if (uut.regs[1] === 32'd10) $display("x1 = %0d (Expected: 10) PASS", uut.regs[1]);
-        else begin $display("x1 = %0d (Expected: 10) FAIL", uut.regs[1]); fail=fail+1; end
-        if (uut.regs[2] === 32'd10) $display("x2 = %0d (Expected: 10) PASS", uut.regs[2]);
-        else begin $display("x2 = %0d (Expected: 10) FAIL", uut.regs[2]); fail=fail+1; end
-        if (uut.regs[3] === 32'd20) $display("x3 = %0d (Expected: 20) PASS - branch flush verified", uut.regs[3]);
-        else begin $display("x3 = %0d (Expected: 20) FAIL - branch flush broken!", uut.regs[3]); fail=fail+1; end
+        if (uut.regs[1] === 32'd36) $display("x1  = %0d (Expected: 36 - JAL return address) PASS", uut.regs[1]);
+        else begin $display("x1  = %0d (Expected: 36) FAIL", uut.regs[1]); fail=fail+1; end
+        if (uut.regs[2] === 32'd30) $display("x2  = %0d (Expected: 30) PASS", uut.regs[2]);
+        else begin $display("x2  = %0d (Expected: 30) FAIL", uut.regs[2]); fail=fail+1; end
+        if (uut.regs[3] === 32'd30) $display("x3  = %0d (Expected: 30) PASS", uut.regs[3]);
+        else begin $display("x3  = %0d (Expected: 30) FAIL", uut.regs[3]); fail=fail+1; end
+        if (uut.regs[4] === 32'd50) $display("x4  = %0d (Expected: 50) PASS", uut.regs[4]);
+        else begin $display("x4  = %0d (Expected: 50) FAIL", uut.regs[4]); fail=fail+1; end
+        if (uut.regs[5] === 32'd40) $display("x5  = %0d (Expected: 40) PASS", uut.regs[5]);
+        else begin $display("x5  = %0d (Expected: 40) FAIL", uut.regs[5]); fail=fail+1; end
+        if (uut.data_mem[0] === 32'd50) $display("mem[0] = %0d (Expected: 50) PASS", uut.data_mem[0]);
+        else begin $display("mem[0] = %0d (Expected: 50) FAIL", uut.data_mem[0]); fail=fail+1; end
         $display("====================================");
         $display("\n========== PERFORMANCE ==========");
         $display("Total cycles  : %0d", uut.cycle_count);
@@ -31,8 +37,8 @@ module tb_cpu;
         $finish;
     end
     initial begin
-        $monitor("Time=%0t | PC=%0d | IF_ID=%h | EX_ALU=%0d | stall=%0b | x1=%0d x2=%0d x3=%0d",
+        $monitor("Time=%0t | PC=%0d | IF_ID=%h | EX_ALU=%0d | stall=%0b | x1=%0d x2=%0d x3=%0d x4=%0d x5=%0d",
                  $time, uut.PC, uut.IF_ID_instr, uut.EX_MEM_alu_result,
-                 uut.stall, uut.regs[1], uut.regs[2], uut.regs[3]);
+                 uut.stall, uut.regs[1], uut.regs[2], uut.regs[3], uut.regs[4], uut.regs[5]);
     end
 endmodule
