@@ -1,51 +1,19 @@
-````
+# RISC-V 5-Stage Pipelined CPU (RV32I)
 
-Find this section (around line 10) and fix it:
+A fully functional 5-stage pipelined RISC-V (RV32I) processor implemented in Verilog,
+verified using a self-checking testbench with waveform-based validation.
 
-**Before (broken):**
-````
-````
-IF → ID → EX → MEM → WB
+---
 
-<img width="1440" ... />
+## Overview
 
-...
-
-Multiple instructions execute simultaneously...
-````
-
-**After (fixed):**
-````
+The processor implements the classic 5-stage pipeline:
 ```
 IF → ID → EX → MEM → WB
 ```
 
 ![Pipeline diagram](https://github.com/user-attachments/assets/1a822a68-3222-452e-8423-2f66ac5e482e)
 
-Multiple instructions execute simultaneously across different stages,
-improving throughput over a single-cycle design.
-````
-
-Then push:
-````bash
-git add README.md
-git commit -m "Fix pipeline image rendering in README"
-git push
-````
-
----
-
-Once that's done, your entire repo is genuinely submission-ready. Here's your final status:# RISC-V 5-Stage 
-Pipelined CPU (RV32I)
-
-A fully functional 5-stage pipelined RISC-V (RV32I) processor implemented in Verilog, verified using a 
-self-checking testbench with waveform-based validation.
-| Task | Status | ---|---|--- Simulation passing | ✅ ALL TESTS PASSED | Repo clean | ✅ No binaries or temp 
-| files |## Overview README accurate | ✅ Correct compile steps + results | Pipeline image fix | ⬅️ Do this now 
-| |The processor implements the classic 5-stage pipeline:
-| N.Ex.T registration | ⚠️ Before April 3rd |``` Token revoked | ⚠️ Do if not done yet |IF → ID → EX → MEM → WB
-```
-After the image fix — **go register at nvidia.eightfold.ai**. That's the only thing that matters before April 3rd.
 Multiple instructions execute simultaneously across different stages,
 improving throughput over a single-cycle design.
 
@@ -167,4 +135,5 @@ ADD x6, x5, x2   # stall inserted, then MEM→EX forward
 
 ## Author
 
-M Sai Sushma
+M Sai Sushma  
+[github.com/sushmasai1704-web/riscv_pipeline_cpu](https://github.com/sushmasai1704-web/riscv_pipeline_cpu)
