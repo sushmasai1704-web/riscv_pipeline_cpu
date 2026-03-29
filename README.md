@@ -85,27 +85,8 @@ x4  = 50 (Expected: 50) PASS
 x5  = 40 (Expected: 40) PASS
 mem[0] = 50 (Expected: 50) PASS
 ====================================
+...
 
-========== PERFORMANCE ==========
-Steady-state CPI     : 1.00  (cycles 6-14, 9 instructions)
-Overall CPI          : 3.00  (includes 4-cycle pipeline fill/drain)
-Stall cycles         : 0     (no load-use or branch hazards in this trace)
-Pipeline efficiency  : 100%  (5-stage overlap, no bubbles)
-=================================
-
-Cycle | IF   | ID   | EX   | MEM  | WB   | Note
-------|------|------|------|------|------|-------------
- 1    | I1   | —    | —    | —    | —    | Fill
- 2    | I2   | I1   | —    | —    | —    | Fill
- 3    | I3   | I2   | I1   | —    | —    | Fill
- 4    | I4   | I3   | I2   | I1   | —    | Fill
- 5    | I5   | I4   | I3   | I2   | I1   | Steady-state
- 6    | I6   | I5   | I4   | I3   | I2   | 1.0 CPI
-
-
-========== TEST STATUS ==========
-ALL TESTS PASSED ✓
-=================================
 ## Performance Analysis
 
 | Metric | Value | Notes |
@@ -132,13 +113,12 @@ ALL TESTS PASSED ✓
 | 12    | —   | —   | —   | I10 | I9  | Drain        |
 | 13    | —   | —   | —   | —   | I10 | Drain        |
 
-
 ```
 
 Instructions tested: ADDI, ADD, SW, LW, BEQ, JAL — covering
 arithmetic, memory access, branching, and jump-and-link.
 
----
+
 ## Hazard Handling
 
 ### Data Hazards — Forwarding
@@ -185,11 +165,11 @@ was correctly killed. 2-cycle branch penalty on taken branches.
 
 ## Possible Improvements
 
-- Branch prediction (2-bit saturating counter BHT)
-- Instruction/data cache integration
-- Full RV32I instruction support (shifts, AUIPC, LUI)
-- Performance counters (CPI tracking)
-- 2-bit saturating counter branch predictor (reduce 2-cycle penalty)
+- **Branch prediction**: 2-bit saturating counter BHT (reduce 2-cycle penalty)
+- **Cache hierarchy**: L1 I$/D$ with hit-under-miss
+- **RV32I completeness**: SLL/SRL/SRA, SLTI/U, AUIPC, LUI, remaining branches
+- **Advanced microarchitecture**: Out-of-order execution (Tomasulo's algorithm)
+- **Verification**: Spike cosimulation, random test generation
 ...
 
 ## Author
