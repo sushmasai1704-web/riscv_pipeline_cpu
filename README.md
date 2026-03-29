@@ -23,10 +23,11 @@ improving throughput over a single-cycle design.
 
 - RV32I base instruction set (R-type, I-type, Load/Store, Branch, JAL)
 - Full data forwarding (EX→EX and MEM→EX paths)
-- Hazard detection unit for load-use stalls
+- Hazard detection unit for load-use stalls and branch flush
 - Pipeline registers between all stages
 - Modular RTL — one module per file
 - Self-checking testbench with pass/fail output
+
 
 ---
 
@@ -116,6 +117,18 @@ the pipeline for one cycle, then forwards from MEM/WB.
 LW  x5, 0(x1)    # data ready after MEM stage
 ADD x6, x5, x2   # stall inserted, then MEM→EX forward
 ```
+### Control Hazards — Branch Flush
+When a branch is taken, the incorrectly fetched instruction is killed.
+The pipeline flushes both IF/ID and ID/EX registers, inserting NOP
+bubbles to prevent wrong instructions from executing.
+```
+BEQ x1, x2, +8      # branch taken (x1 == x2)
+ADDI x3, x0, 20     # FLUSHED — never executes
+ADDI x3, x0, 20     # correct target — executes
+```
+
+Verified by testbench — x3 = 20 confirms the flushed instruction
+was correctly killed. 2-cycle branch penalty on taken branches.
 
 ---
 
