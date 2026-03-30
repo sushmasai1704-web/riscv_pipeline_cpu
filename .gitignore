@@ -1,3 +1,7 @@
-*.vvp
-*.vcd
-*.v.save
+dump.vcd
+sim/cpu.vvp
+*.py
+*.broken
+program_orig.hex
+test_*.hex
+test_*.s
