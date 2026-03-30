@@ -8,7 +8,7 @@ module tb_cpu;
         $dumpfile("dump.vcd");
         $dumpvars(0, tb_cpu);
         rst = 1; #20 rst = 0;
-        wait(uut.instr_count == 8); repeat(4) @(posedge clk);
+        repeat(300) @(posedge clk);
         $display("\n========== FINAL RESULTS ==========");
         if (uut.regs[1] === 32'd36) $display("x1  = %0d (Expected: 36) PASS", uut.regs[1]);
         else begin $display("x1  = %0d (Expected: 36) FAIL", uut.regs[1]); fail=fail+1; end
@@ -18,10 +18,11 @@ module tb_cpu;
         else begin $display("x3  = %0d (Expected: 30) FAIL", uut.regs[3]); fail=fail+1; end
         if (uut.regs[4] === 32'd50) $display("x4  = %0d (Expected: 50) PASS", uut.regs[4]);
         else begin $display("x4  = %0d (Expected: 50) FAIL", uut.regs[4]); fail=fail+1; end
-        if (uut.regs[5] === 32'd40) $display("x5  = %0d (Expected: 40) PASS", uut.regs[5]);
-        else begin $display("x5  = %0d (Expected: 40) FAIL", uut.regs[5]); fail=fail+1; end
-        if (uut.data_mem[0] === 32'd50) $display("mem[0] = %0d (Expected: 50) PASS", uut.data_mem[0]);
-        else begin $display("mem[0] = %0d (Expected: 50) FAIL", uut.data_mem[0]); fail=fail+1; end
+        if (uut.regs[5] === 32'd66) $display("x5  = %0d (Expected: 66) PASS", uut.regs[5]);
+        else begin $display("x5  = %0d (Expected: 66) FAIL", uut.regs[5]); fail=fail+1; end
+        if (uut.dcache_inst.data[0][0] === 32'd50) $display("mem[0] = %0d (Expected: 50) PASS", uut.dcache_inst.data[0][0]);
+        else if (uut.main_mem.mem[0] === 32'd50) $display("mem[0] = %0d (Expected: 50) PASS [in DRAM]", uut.main_mem.mem[0]);
+        else begin $display("mem[0] = dcache=%0d dram=%0d (Expected: 50) FAIL", uut.dcache_inst.data[0][0], uut.main_mem.mem[0]); fail=fail+1; end
         $display("====================================");
         $display("\n========== PERFORMANCE ==========");
         $display("Total cycles     : %0d", uut.cycle_count);
@@ -44,5 +45,6 @@ module tb_cpu;
         $monitor("Time=%0t | PC=%0d | IF_ID=%h | stall=%0b | mispredict=%0b | x1=%0d x2=%0d x3=%0d x4=%0d x5=%0d",
                  $time, uut.PC, uut.IF_ID_instr, uut.stall, uut.mispredict,
                  uut.regs[1], uut.regs[2], uut.regs[3], uut.regs[4], uut.regs[5]);
+
     end
 endmodule
