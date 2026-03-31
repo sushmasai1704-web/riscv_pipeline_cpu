@@ -1,22 +1,21 @@
-`timescale 1ns/1ps
+`timescale 1ns / 1ps
 
-// ============================================================
-// control.v — RV32I Control Unit
-// Decodes opcode → control signals for pipeline_cpu.v
-// ============================================================
 module control(
     input  [6:0] opcode,
     output reg [3:0] alu_op,
-    output reg alu_src,
-    output reg mem_to_reg,
-    output reg reg_write,
-    output reg mem_read,
-    output reg mem_write,
-    output reg branch,
-    output reg jal,
-    output reg jalr
+    output reg       alu_src,
+    output reg       mem_to_reg,
+    output reg       reg_write,
+    output reg       mem_read,
+    output reg       mem_write,
+    output reg       branch,
+    output reg       jal,
+    output reg       jalr,
+    output reg       lui,
+    output reg       auipc
 );
 
+<<<<<<< HEAD
     // RISC-V Opcodes
     localparam OP_R      = 7'b0110011; // R-type  (add, sub, and, or, xor, sll, srl, sra, slt)
     localparam OP_I_ALU  = 7'b0010011; // I-type  (addi, andi, ori, xori, slli, srli, srai, slti)
@@ -40,66 +39,62 @@ module control(
     localparam ALU_OR   = 4'b1000;
     localparam ALU_AND  = 4'b1001;
     localparam ALU_PASS = 4'b1010; // pass a (for JAL/JALR PC+4)
+=======
+    // Opcode definitions
+    localparam OP_IMM = 7'b0010011;  // I-type ALU
+    localparam OP     = 7'b0110011;  // R-type ALU
+    localparam LOAD   = 7'b0000011;  // Load
+    localparam STORE  = 7'b0100011;  // Store
+    localparam BRANCH = 7'b1100011;  // Branch
+    localparam JAL    = 7'b1101111;  // JAL
+    localparam JALR   = 7'b1100111;  // JALR
+>>>>>>> 2a2713820fd89ac6a4c8748888c94268dbf07c77
 
     always @(*) begin
-        // Safe defaults — NOP
-        alu_op    = ALU_ADD;
-        alu_src   = 0;
-        mem_to_reg= 0;
-        reg_write = 0;
-        mem_read  = 0;
-        mem_write = 0;
-        branch    = 0;
-        jal       = 0;
-        jalr      = 0;
+        // Defaults
+        alu_op     = 4'b0000;
+        alu_src    = 1'b0;
+        mem_to_reg = 1'b0;
+        reg_write  = 1'b0;
+        mem_read   = 1'b0;
+        mem_write  = 1'b0;
+        branch     = 1'b0;
+        jal        = 1'b0;
+        jalr       = 1'b0;
+        lui        = 1'b0;
+        auipc      = 1'b0;
 
         case (opcode)
-            OP_R: begin
-                // funct3/funct7 decoded in EX stage via alu_op from ID
-                // control just enables reg write, ALU uses regs
-                alu_op    = ALU_ADD;  // placeholder; EX overrides via funct
-                alu_src   = 0;
-                reg_write = 1;
+            OP_IMM: begin
+                alu_src   = 1'b1;
+                reg_write = 1'b1;
             end
-
-            OP_I_ALU: begin
-                alu_op    = ALU_ADD;  // placeholder; EX overrides via funct
-                alu_src   = 1;        // use immediate
-                reg_write = 1;
+            OP: begin
+                reg_write = 1'b1;
             end
-
-            OP_LOAD: begin
-                alu_op    = ALU_ADD;
-                alu_src   = 1;
-                mem_to_reg= 1;
-                reg_write = 1;
-                mem_read  = 1;
+            LOAD: begin
+                alu_src    = 1'b1;
+                mem_to_reg = 1'b1;
+                reg_write  = 1'b1;
+                mem_read   = 1'b1;
             end
-
-            OP_STORE: begin
-                alu_op    = ALU_ADD;
-                alu_src   = 1;
-                mem_write = 1;
+            STORE: begin
+                alu_src   = 1'b1;
+                mem_write = 1'b1;
             end
-
-            OP_BRANCH: begin
-                alu_op    = ALU_SUB;  // SUB → zero flag for BEQ
-                alu_src   = 0;
-                branch    = 1;
+            BRANCH: begin
+                branch = 1'b1;
             end
-
-            OP_JAL: begin
-                alu_op    = ALU_ADD;
-                jal       = 1;
-                reg_write = 1;        // write PC+4 to rd
+            JAL: begin
+                jal       = 1'b1;
+                reg_write = 1'b1;
             end
-
-            OP_JALR: begin
-                alu_op    = ALU_ADD;
-                alu_src   = 1;
-                jalr      = 1;
-                reg_write = 1;
+            JALR: begin
+                jalr      = 1'b1;
+                alu_src   = 1'b1;
+                reg_write = 1'b1;
             end
+<<<<<<< HEAD
  
             OP_LUI: begin
                 alu_op    = ALU_PASS;
@@ -112,7 +107,15 @@ module control(
                 reg_write = 1;
             end
             default: begin
+=======
+            7'b0110111: begin // LUI
+                alu_src=1'b1; reg_write=1'b1; lui=1'b1;
             end
+            7'b0010111: begin // AUIPC
+                alu_src=1'b1; reg_write=1'b1; auipc=1'b1;
+>>>>>>> 2a2713820fd89ac6a4c8748888c94268dbf07c77
+            end
+            default: ;
         endcase
     end
 endmodule

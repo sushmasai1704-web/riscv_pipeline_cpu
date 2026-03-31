@@ -1,8 +1,7 @@
-*.vvp
-*.vcd
-*.v.save
-signals.txt
-view_signals.tcl
-cpu.gtkw
-pipeline_cpu.v
-simple_cpu.v
+dump.vcd
+sim/cpu.vvp
+*.py
+*.broken
+program_orig.hex
+test_*.hex
+test_*.s
