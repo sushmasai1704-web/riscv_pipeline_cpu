@@ -1,7 +1,7 @@
-dump.vcd
-sim/cpu.vvp
-*.py
-*.broken
-program_orig.hex
-test_*.hex
-test_*.s
+*.vvp
+*.vcd
+*.swp
+*.swo
+*.bak
+fix*.py
+__pycache__/
