@@ -25,6 +25,8 @@ module control(
     localparam OP_BRANCH = 7'b1100011; // Branch  (beq, bne, blt)
     localparam OP_JAL    = 7'b1101111; // JAL
     localparam OP_JALR   = 7'b1100111; // JALR
+    localparam OP_LUI    = 7'b0110111; // LUI
+    localparam OP_AUIPC  = 7'b0010111; // AUIPC
 
     // ALU op encoding (must match alu.v)
     localparam ALU_ADD  = 4'b0000;
@@ -98,11 +100,19 @@ module control(
                 jalr      = 1;
                 reg_write = 1;
             end
-
+ 
+            OP_LUI: begin
+                alu_op    = ALU_PASS;
+                alu_src   = 1;
+                reg_write = 1;
+            end
+            OP_AUIPC: begin
+                alu_op    = ALU_ADD;
+                alu_src   = 1;
+                reg_write = 1;
+            end
             default: begin
-                // NOP / unknown — all zeros
             end
         endcase
     end
-
 endmodule
