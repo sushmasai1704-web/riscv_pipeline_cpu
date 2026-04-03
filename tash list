@@ -1,0 +1,69 @@
+[1mdiff --git a/rtl/pipeline_cpu.v b/rtl/pipeline_cpu.v[m
+[1mindex c6f5d23..f10c438 100644[m
+[1m--- a/rtl/pipeline_cpu.v[m
+[1m+++ b/rtl/pipeline_cpu.v[m
+[36m@@ -120,7 +120,8 @@[m [mmodule pipeline_cpu([m
+     );[m
+ [m
+     assign instr = icache_hit ? icache_rdata : 32'h00000013;[m
+[31m-    assign icache_stall = !icache_hit;[m
+[32m+[m[32m    wire icache_stall;[m
+[32m+[m[32massign icache_stall = !icache_hit;[m
+ [m
+     assign mispredict = (ID_EX_branch || ID_EX_jal || ID_EX_jalr) && [m
+                         (ID_EX_predict_taken != branch_taken_ex);[m
+[36m@@ -275,7 +276,7 @@[m [mmodule pipeline_cpu([m
+     assign ID_EX_predict_target = r_ID_EX_predict_target;[m
+ [m
+     always @(posedge clk or posedge rst) begin[m
+[31m-        if (rst || stall || mispredict) begin[m
+[32m+[m[32m        if (rst || mispredict || load_use_stall) begin[m
+             r_ID_EX_pc             <= 32'h0;[m
+             r_ID_EX_reg_rdata1     <= 32'h0;[m
+             r_ID_EX_reg_rdata2     <= 32'h0;[m
+[36m@@ -298,7 +299,7 @@[m [mmodule pipeline_cpu([m
+             r_ID_EX_auipc          <= 1'b0;[m
+             r_ID_EX_predict_taken  <= 1'b0;[m
+             r_ID_EX_predict_target <= 32'h0;[m
+[31m-        end else begin[m
+[32m+[m[32m        end else if (!stall) begin[m
+             r_ID_EX_pc             <= IF_ID_pc;[m
+             r_ID_EX_reg_rdata1     <= reg_rdata1;[m
+             r_ID_EX_reg_rdata2     <= reg_rdata2;[m
+[36m@@ -430,7 +431,7 @@[m [mmodule pipeline_cpu([m
+             r_EX_MEM_mem_write   <= 1'b0;[m
+             r_EX_MEM_jal         <= 1'b0;[m
+             r_EX_MEM_branch      <= 1'b0;[m
+[31m-        end else begin[m
+[32m+[m[32m        end else if (!stall) begin[m
+             r_EX_MEM_alu_result  <= alu_result;[m
+             r_EX_MEM_reg_rdata2  <= forward_b_out;[m
+             r_EX_MEM_pc_plus4    <= pc_plus4_ex;[m
+[36m@@ -439,7 +440,7 @@[m [mmodule pipeline_cpu([m
+             r_EX_MEM_reg_write   <= ID_EX_reg_write;[m
+             r_EX_MEM_mem_read    <= ID_EX_mem_read;[m
+             r_EX_MEM_mem_write   <= ID_EX_mem_write;[m
+[31m-            r_EX_MEM_jal         <= ID_EX_jal;[m
+[32m+[m[32m            r_EX_MEM_jal <= ID_EX_jal || ID_EX_jalr;[m
+             r_EX_MEM_branch      <= ID_EX_branch || ID_EX_jal || ID_EX_jalr;[m
+         end[m
+     end[m
+[36m@@ -478,7 +479,8 @@[m [mmodule pipeline_cpu([m
+     );[m
+ [m
+     assign mem_read_data = dcache_rdata;[m
+[31m-    assign dcache_stall  = (r_EX_MEM_mem_read | r_EX_MEM_mem_write) & !dcache_hit;[m
+[32m+[m[32m    wire dcache_stall;[m
+[32m+[m[32massign dcache_stall  = (r_EX_MEM_mem_read | r_EX_MEM_mem_write) & !dcache_hit;[m
+ [m
+     // ============================================================[m
+     // MEM/WB PIPELINE REGISTER[m
+[36m@@ -509,7 +511,7 @@[m [mmodule pipeline_cpu([m
+             r_MEM_WB_reg_write  <= 1'b0;[m
+             r_MEM_WB_jal        <= 1'b0;[m
+             r_MEM_WB_mem_write  <= 1'b0;[m
+[31m-        end else begin[m
+[32m+[m[32m        end else if (!stall) begin[m
+             r_MEM_WB_alu_result <= EX_MEM_alu_result;[m
+             r_MEM_WB_mem_data   <= mem_read_data;[m
+             r_MEM_WB_pc_plus4   <= r_EX_MEM_pc_plus4;[m

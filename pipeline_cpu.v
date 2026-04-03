@@ -6,9 +6,9 @@ module pipeline_cpu(
 );
 
     // ============================================================
-    // SIGNAL DECLARATIONS (before use)
+    // SIGNAL DECLARATIONS
     // ============================================================
-    
+
     // Predictor interface
     wire predict_taken;
     wire [31:0] predict_target;
@@ -18,7 +18,7 @@ module pipeline_cpu(
     wire        ex_taken;
     wire [31:0] ex_target;
     wire        ex_valid;
-    
+
     // IF Stage
     reg  [31:0] PC;
     wire [31:0] pc_plus4;
@@ -26,15 +26,15 @@ module pipeline_cpu(
     wire [31:0] pc_next;
     wire        stall;
     wire        flush_if_id;
-    
-    // ID Stage (forward declarations)
+
+    // ID Stage
     wire [6:0] IF_ID_opcode;
     wire [4:0] IF_ID_rs1, IF_ID_rs2, IF_ID_rd;
     wire [31:0] IF_ID_pc, IF_ID_instr;
     wire        IF_ID_predict_taken;
     wire [31:0] IF_ID_predict_target;
-    
-    // EX Stage (forward declarations)
+
+    // EX Stage
     wire [31:0] ID_EX_pc;
     wire [31:0] ID_EX_reg_rdata1, ID_EX_reg_rdata2, ID_EX_imm;
     wire [4:0]  ID_EX_rs1, ID_EX_rs2, ID_EX_rd;
@@ -47,7 +47,7 @@ module pipeline_cpu(
     wire [2:0]  ID_EX_funct3;
     wire        ID_EX_funct7_5;
     wire [3:0]  ID_EX_alu_op;
-    
+
     // EX/MEM Stage
     wire [31:0] EX_MEM_alu_result;
     wire        EX_MEM_reg_write;
@@ -63,7 +63,7 @@ module pipeline_cpu(
     wire        branch_taken_ex;
     wire [31:0] actual_target;
     wire        mispredict;
-    
+
     // MEM/WB Stage
     wire [31:0] MEM_WB_alu_result, MEM_WB_mem_data;
     wire        MEM_WB_mem_to_reg;
@@ -74,7 +74,7 @@ module pipeline_cpu(
     wire        MEM_WB_mem_write;
 
     // ============================================================
-    // BRANCH PREDICTOR INSTANCE (now PC is declared)
+    // BRANCH PREDICTOR
     // ============================================================
     branch_predictor #(
         .INDEX_BITS(8)
@@ -98,13 +98,13 @@ module pipeline_cpu(
     // ============================================================
     assign pc_plus4 = PC + 4;
 
-    // ── ICache interface ──────────────────────────────────────
     wire        icache_hit;
     wire [31:0] icache_rdata;
     wire        icache_mem_req;
     wire [31:0] icache_mem_addr;
     wire [127:0] imem_rdata;
     wire         imem_iready;
+    wire         icache_stall;
 
     icache icache_inst(
         .clk      (clk),
@@ -119,21 +119,21 @@ module pipeline_cpu(
         .mem_ready(imem_iready)
     );
 
-    assign instr = icache_hit ? icache_rdata : 32'h00000013;
+    assign instr        = icache_hit ? icache_rdata : 32'h00000013;
     assign icache_stall = !icache_hit;
 
-    assign mispredict = (ID_EX_branch || ID_EX_jal || ID_EX_jalr) && 
+    assign mispredict = (ID_EX_branch || ID_EX_jal || ID_EX_jalr) &&
                         (ID_EX_predict_taken != branch_taken_ex);
-    
-    assign pc_next = 
-        mispredict ? actual_target :
-        (predict_valid && predict_taken) ? predict_target :
+
+    assign pc_next =
+        mispredict                        ? actual_target  :
+        (predict_valid && predict_taken)  ? predict_target :
         pc_plus4;
 
     always @(posedge clk or posedge rst) begin
         if (rst)
             PC <= 32'h0;
-        else if (mispredict)          // mispredict overrides stall
+        else if (mispredict)
             PC <= actual_target;
         else if (!stall)
             PC <= pc_next;
@@ -143,16 +143,16 @@ module pipeline_cpu(
     // IF/ID PIPELINE REGISTER
     // ============================================================
     reg [31:0] r_IF_ID_pc, r_IF_ID_instr;
-    reg r_IF_ID_predict_taken;
+    reg        r_IF_ID_predict_taken;
     reg [31:0] r_IF_ID_predict_target;
 
-    assign IF_ID_pc = r_IF_ID_pc;
-    assign IF_ID_instr = r_IF_ID_instr;
-    assign IF_ID_opcode = IF_ID_instr[6:0];
-    assign IF_ID_rs1 = IF_ID_instr[19:15];
-    assign IF_ID_rs2 = IF_ID_instr[24:20];
-    assign IF_ID_rd = IF_ID_instr[11:7];
-    assign IF_ID_predict_taken = r_IF_ID_predict_taken;
+    assign IF_ID_pc             = r_IF_ID_pc;
+    assign IF_ID_instr          = r_IF_ID_instr;
+    assign IF_ID_opcode         = IF_ID_instr[6:0];
+    assign IF_ID_rs1            = IF_ID_instr[19:15];
+    assign IF_ID_rs2            = IF_ID_instr[24:20];
+    assign IF_ID_rd             = IF_ID_instr[11:7];
+    assign IF_ID_predict_taken  = r_IF_ID_predict_taken;
     assign IF_ID_predict_target = r_IF_ID_predict_target;
 
     always @(posedge clk or posedge rst) begin
@@ -207,12 +207,12 @@ module pipeline_cpu(
     reg  [31:0] regs [0:31];
     wire [31:0] reg_rdata1, reg_rdata2;
 
-    // Forward WB result to ID stage to avoid 1-cycle regfile read latency
-    assign reg_rdata1 = (IF_ID_rs1 == 0)                              ? 32'h0 :
-                        (reg_write_wb && reg_waddr_wb == IF_ID_rs1)   ? reg_wdata_wb :
+    // Forward WB result to ID to avoid 1-cycle regfile read latency
+    assign reg_rdata1 = (IF_ID_rs1 == 0)                            ? 32'h0 :
+                        (reg_write_wb && reg_waddr_wb == IF_ID_rs1) ? reg_wdata_wb :
                         regs[IF_ID_rs1];
-    assign reg_rdata2 = (IF_ID_rs2 == 0)                              ? 32'h0 :
-                        (reg_write_wb && reg_waddr_wb == IF_ID_rs2)   ? reg_wdata_wb :
+    assign reg_rdata2 = (IF_ID_rs2 == 0)                            ? 32'h0 :
+                        (reg_write_wb && reg_waddr_wb == IF_ID_rs2) ? reg_wdata_wb :
                         regs[IF_ID_rs2];
 
     integer k;
@@ -230,10 +230,12 @@ module pipeline_cpu(
     end
 
     wire   load_use_stall = (ID_EX_mem_read &&
-                    (ID_EX_rd != 5'h0) &&
-                    ((ID_EX_rd == IF_ID_rs1) || (ID_EX_rd == IF_ID_rs2)));
-    assign stall = load_use_stall | icache_stall | dcache_stall;
+                             (ID_EX_rd != 5'h0) &&
+                             ((ID_EX_rd == IF_ID_rs1) || (ID_EX_rd == IF_ID_rs2)));
 
+    wire   dcache_stall;   // declared here, driven after dcache inst
+
+    assign stall      = load_use_stall | icache_stall | dcache_stall;
     assign flush_if_id = mispredict;
 
     // ============================================================
@@ -251,28 +253,32 @@ module pipeline_cpu(
     reg        r_ID_EX_predict_taken;
     reg [31:0] r_ID_EX_predict_target;
 
-    assign ID_EX_pc = r_ID_EX_pc;
-    assign ID_EX_reg_rdata1 = r_ID_EX_reg_rdata1;
-    assign ID_EX_rs2 = r_ID_EX_rs2;
-    assign ID_EX_rd = r_ID_EX_rd;
-    assign ID_EX_alu_op = r_ID_EX_alu_op;
-    assign ID_EX_funct3 = r_ID_EX_funct3;
-    assign ID_EX_funct7_5 = r_ID_EX_funct7_5;
-    assign ID_EX_alu_src = r_ID_EX_alu_src;
-    assign ID_EX_mem_to_reg = r_ID_EX_mem_to_reg;
-    assign ID_EX_reg_write = r_ID_EX_reg_write;
-    assign ID_EX_mem_read = r_ID_EX_mem_read;
-    assign ID_EX_mem_write = r_ID_EX_mem_write;
-    assign ID_EX_branch = r_ID_EX_branch;
-    assign ID_EX_jal = r_ID_EX_jal;
-    assign ID_EX_jalr = r_ID_EX_jalr;
-    assign ID_EX_lui   = r_ID_EX_lui;
-    assign ID_EX_auipc = r_ID_EX_auipc;
-    assign ID_EX_predict_taken = r_ID_EX_predict_taken;
+    assign ID_EX_pc             = r_ID_EX_pc;
+    assign ID_EX_reg_rdata1     = r_ID_EX_reg_rdata1;
+    assign ID_EX_reg_rdata2     = r_ID_EX_reg_rdata2;
+    assign ID_EX_imm            = r_ID_EX_imm;
+    assign ID_EX_rs1            = r_ID_EX_rs1;
+    assign ID_EX_rs2            = r_ID_EX_rs2;
+    assign ID_EX_rd             = r_ID_EX_rd;
+    assign ID_EX_alu_op         = r_ID_EX_alu_op;
+    assign ID_EX_funct3         = r_ID_EX_funct3;
+    assign ID_EX_funct7_5       = r_ID_EX_funct7_5;
+    assign ID_EX_alu_src        = r_ID_EX_alu_src;
+    assign ID_EX_mem_to_reg     = r_ID_EX_mem_to_reg;
+    assign ID_EX_reg_write      = r_ID_EX_reg_write;
+    assign ID_EX_mem_read       = r_ID_EX_mem_read;
+    assign ID_EX_mem_write      = r_ID_EX_mem_write;
+    assign ID_EX_branch         = r_ID_EX_branch;
+    assign ID_EX_jal            = r_ID_EX_jal;
+    assign ID_EX_jalr           = r_ID_EX_jalr;
+    assign ID_EX_lui            = r_ID_EX_lui;
+    assign ID_EX_auipc          = r_ID_EX_auipc;
+    assign ID_EX_predict_taken  = r_ID_EX_predict_taken;
     assign ID_EX_predict_target = r_ID_EX_predict_target;
 
     always @(posedge clk or posedge rst) begin
-        if (rst || stall || mispredict) begin
+        if (rst || mispredict) begin
+            // Flush to NOP
             r_ID_EX_pc             <= 32'h0;
             r_ID_EX_reg_rdata1     <= 32'h0;
             r_ID_EX_reg_rdata2     <= 32'h0;
@@ -295,7 +301,19 @@ module pipeline_cpu(
             r_ID_EX_auipc          <= 1'b0;
             r_ID_EX_predict_taken  <= 1'b0;
             r_ID_EX_predict_target <= 32'h0;
-        end else begin
+        end else if (load_use_stall) begin
+            // Insert NOP bubble into EX; IF/ID is frozen by !stall above
+            r_ID_EX_reg_write  <= 1'b0;
+            r_ID_EX_mem_read   <= 1'b0;
+            r_ID_EX_mem_write  <= 1'b0;
+            r_ID_EX_branch     <= 1'b0;
+            r_ID_EX_jal        <= 1'b0;
+            r_ID_EX_jalr       <= 1'b0;
+            r_ID_EX_lui        <= 1'b0;
+            r_ID_EX_auipc      <= 1'b0;
+            r_ID_EX_rd         <= 5'h0;
+        end else if (!stall) begin
+            // Normal capture
             r_ID_EX_pc             <= IF_ID_pc;
             r_ID_EX_reg_rdata1     <= reg_rdata1;
             r_ID_EX_reg_rdata2     <= reg_rdata2;
@@ -319,6 +337,7 @@ module pipeline_cpu(
             r_ID_EX_predict_taken  <= IF_ID_predict_taken;
             r_ID_EX_predict_target <= IF_ID_predict_target;
         end
+        // else: dcache_stall (not load-use) — hold ID/EX register value
     end
 
     // ============================================================
@@ -327,19 +346,24 @@ module pipeline_cpu(
     reg [3:0] ex_alu_op_sel;
     always @(*) begin
         case (ID_EX_funct3)
-            3'b000: ex_alu_op_sel = (ID_EX_funct7_5 && !ID_EX_alu_src) ? 4'b0001 : 4'b0000;
-            3'b001: ex_alu_op_sel = 4'b0010;
-            3'b010: ex_alu_op_sel = 4'b0011;
-            3'b011: ex_alu_op_sel = 4'b0100;
-            3'b100: ex_alu_op_sel = 4'b0101;
-            3'b101: ex_alu_op_sel = ID_EX_funct7_5 ? 4'b0111 : 4'b0110;
-            3'b110: ex_alu_op_sel = 4'b1000;
-            3'b111: ex_alu_op_sel = 4'b1001;
+            3'b000: ex_alu_op_sel = (ID_EX_funct7_5 && !ID_EX_alu_src) ? 4'b0001 : 4'b0000; // SUB or ADD
+            3'b001: ex_alu_op_sel = 4'b0010; // SLL
+            3'b010: ex_alu_op_sel = 4'b0011; // SLT
+            3'b011: ex_alu_op_sel = 4'b0100; // SLTU
+            3'b100: ex_alu_op_sel = 4'b0101; // XOR
+            3'b101: ex_alu_op_sel = ID_EX_funct7_5 ? 4'b0111 : 4'b0110; // SRA or SRL
+            3'b110: ex_alu_op_sel = 4'b1000; // OR
+            3'b111: ex_alu_op_sel = 4'b1001; // AND
             default: ex_alu_op_sel = 4'b0000;
         endcase
     end
 
-    assign wb_data = MEM_WB_jal ? MEM_WB_pc_plus4 : (MEM_WB_mem_to_reg) ? MEM_WB_mem_data : MEM_WB_alu_result;
+    assign wb_data = MEM_WB_jal        ? MEM_WB_pc_plus4  :
+                     MEM_WB_mem_to_reg ? MEM_WB_mem_data   :
+                                         MEM_WB_alu_result ;
+
+    // For JAL in EX/MEM stage, forward pc_plus4 not alu_result
+    wire [31:0] ex_mem_fwd_data = r_EX_MEM_jal ? r_EX_MEM_pc_plus4 : EX_MEM_alu_result;
 
     assign forward_a_sel =
         (EX_MEM_reg_write && (EX_MEM_rd != 0) && (EX_MEM_rd == ID_EX_rs1)) ? 2'b10 :
@@ -349,19 +373,16 @@ module pipeline_cpu(
         (EX_MEM_reg_write && (EX_MEM_rd != 0) && (EX_MEM_rd == ID_EX_rs2)) ? 2'b10 :
         (MEM_WB_reg_write && (MEM_WB_rd != 0) && (MEM_WB_rd == ID_EX_rs2)) ? 2'b01 : 2'b00;
 
-    // For JAL in EX/MEM stage, forward pc_plus4 not alu_result
-    wire [31:0] ex_mem_fwd_data = r_EX_MEM_jal ? r_EX_MEM_pc_plus4 : EX_MEM_alu_result;
-
     assign forward_a_out =
         (forward_a_sel == 2'b10) ? ex_mem_fwd_data :
-        (forward_a_sel == 2'b01) ? wb_data : ID_EX_reg_rdata1;
+        (forward_a_sel == 2'b01) ? wb_data          : ID_EX_reg_rdata1;
 
     assign forward_b_out =
         (forward_b_sel == 2'b10) ? ex_mem_fwd_data :
-        (forward_b_sel == 2'b01) ? wb_data : ID_EX_reg_rdata2;
+        (forward_b_sel == 2'b01) ? wb_data          : ID_EX_reg_rdata2;
 
     assign alu_in_a = ID_EX_auipc ? ID_EX_pc  :
-                   ID_EX_lui   ? 32'h0     : forward_a_out;
+                      ID_EX_lui   ? 32'h0      : forward_a_out;
     assign alu_in_b = ID_EX_alu_src ? ID_EX_imm : forward_b_out;
 
     alu alu_inst(
@@ -379,25 +400,25 @@ module pipeline_cpu(
     assign jalr_target   = {alu_result[31:1], 1'b0};
     assign pc_plus4_ex   = ID_EX_pc + 4;
 
-    // Branch condition based on funct3
     wire branch_cond =
-        (ID_EX_funct3 == 3'b000) ?  alu_zero :           // BEQ
-        (ID_EX_funct3 == 3'b001) ? !alu_zero :           // BNE
-        (ID_EX_funct3 == 3'b100) ?  alu_result[0] :      // BLT
-        (ID_EX_funct3 == 3'b101) ? !alu_result[0] :      // BGE
-        (ID_EX_funct3 == 3'b110) ?  alu_result[0] :      // BLTU
-        (ID_EX_funct3 == 3'b111) ? !alu_result[0] : 0;   // BGEU
+        (ID_EX_funct3 == 3'b000) ?  alu_zero        :  // BEQ
+        (ID_EX_funct3 == 3'b001) ? !alu_zero        :  // BNE
+        (ID_EX_funct3 == 3'b100) ?  alu_result[0]   :  // BLT
+        (ID_EX_funct3 == 3'b101) ? !alu_result[0]   :  // BGE
+        (ID_EX_funct3 == 3'b110) ?  alu_result[0]   :  // BLTU
+        (ID_EX_funct3 == 3'b111) ? !alu_result[0]   : 0; // BGEU
+
     assign branch_taken_ex = (ID_EX_branch && branch_cond) || ID_EX_jal || ID_EX_jalr;
-    assign actual_target   = ID_EX_jal    ? jal_target :
-                             ID_EX_jalr   ? jalr_target :
-                             (ID_EX_branch && branch_cond) ? branch_target :
+    assign actual_target   = ID_EX_jal                      ? jal_target    :
+                             ID_EX_jalr                      ? jalr_target   :
+                             (ID_EX_branch && branch_cond)  ? branch_target :
                              pc_plus4_ex;
 
-    assign ex_pc      = ID_EX_pc;
-    assign ex_branch  = ID_EX_branch || ID_EX_jal || ID_EX_jalr;
-    assign ex_taken   = branch_taken_ex;
-    assign ex_target  = actual_target;
-    assign ex_valid   = ex_branch;
+    assign ex_pc     = ID_EX_pc;
+    assign ex_branch = ID_EX_branch || ID_EX_jal || ID_EX_jalr;
+    assign ex_taken  = branch_taken_ex;
+    assign ex_target = actual_target;
+    assign ex_valid  = ex_branch;
 
     // ============================================================
     // EX/MEM PIPELINE REGISTER
@@ -417,40 +438,39 @@ module pipeline_cpu(
 
     always @(posedge clk or posedge rst) begin
         if (rst) begin
-            r_EX_MEM_alu_result  <= 32'h0;
-            r_EX_MEM_reg_rdata2  <= forward_b_val;
-            r_EX_MEM_pc_plus4    <= 32'h0;
-            r_EX_MEM_rd          <= 5'h0;
-            r_EX_MEM_mem_to_reg  <= 1'b0;
-            r_EX_MEM_reg_write   <= 1'b0;
-            r_EX_MEM_mem_read    <= 1'b0;
-            r_EX_MEM_mem_write   <= 1'b0;
-            r_EX_MEM_jal         <= 1'b0;
-            r_EX_MEM_branch      <= 1'b0;
+            r_EX_MEM_alu_result <= 32'h0;
+            r_EX_MEM_reg_rdata2 <= 32'h0;   // FIX: was forward_b_val (undeclared)
+            r_EX_MEM_pc_plus4   <= 32'h0;
+            r_EX_MEM_rd         <= 5'h0;
+            r_EX_MEM_mem_to_reg <= 1'b0;
+            r_EX_MEM_reg_write  <= 1'b0;
+            r_EX_MEM_mem_read   <= 1'b0;
+            r_EX_MEM_mem_write  <= 1'b0;
+            r_EX_MEM_jal        <= 1'b0;
+            r_EX_MEM_branch     <= 1'b0;
         end else if (!stall) begin
-            r_EX_MEM_alu_result  <= alu_result;
-            r_EX_MEM_reg_rdata2  <= forward_b_val;
-            r_EX_MEM_pc_plus4    <= pc_plus4_ex;
-            r_EX_MEM_rd          <= ID_EX_rd;
-            r_EX_MEM_mem_to_reg  <= ID_EX_mem_to_reg;
-            r_EX_MEM_reg_write   <= ID_EX_reg_write;
-            r_EX_MEM_mem_read    <= ID_EX_mem_read;
-            r_EX_MEM_mem_write   <= ID_EX_mem_write;
-            r_EX_MEM_jal         <= ID_EX_jal;
-            r_EX_MEM_branch      <= ID_EX_branch || ID_EX_jal || ID_EX_jalr;
+            r_EX_MEM_alu_result <= alu_result;
+            r_EX_MEM_reg_rdata2 <= forward_b_out;  // FIX: was forward_b_val (undeclared)
+            r_EX_MEM_pc_plus4   <= pc_plus4_ex;
+            r_EX_MEM_rd         <= ID_EX_rd;
+            r_EX_MEM_mem_to_reg <= ID_EX_mem_to_reg;
+            r_EX_MEM_reg_write  <= ID_EX_reg_write;
+            r_EX_MEM_mem_read   <= ID_EX_mem_read;
+            r_EX_MEM_mem_write  <= ID_EX_mem_write;
+            r_EX_MEM_jal        <= ID_EX_jal;
+            r_EX_MEM_branch     <= ID_EX_branch || ID_EX_jal || ID_EX_jalr;
         end
     end
 
     // ============================================================
-    // MEM STAGE
+    // MEM STAGE — DCache
     // ============================================================
-    // ── DCache interface ──────────────────────────────────────
-    wire [31:0] mem_read_data;
-    wire        dcache_hit;
-    wire [31:0] dcache_rdata;
-    wire        dcache_mem_req;
-    wire        dcache_mem_write;
-    wire [31:0] dcache_mem_addr;
+    wire [31:0]  mem_read_data;
+    wire         dcache_hit;
+    wire [31:0]  dcache_rdata;
+    wire         dcache_mem_req;
+    wire         dcache_mem_write;
+    wire [31:0]  dcache_mem_addr;
     wire [127:0] dcache_mem_wdata;
     wire [3:0]   dcache_mem_we;
     wire [127:0] dmem_rdata;
@@ -533,7 +553,7 @@ module pipeline_cpu(
     end
 
     // ============================================================
-    // CPI PERFORMANCE COUNTER
+    // PERFORMANCE COUNTERS
     // ============================================================
     reg [31:0] cycle_count;
     reg [31:0] instr_count;
@@ -542,30 +562,24 @@ module pipeline_cpu(
     reg [31:0] mispredict_count;
 
     always @(posedge clk or posedge rst) begin
-        if (rst)
-            cycle_count <= 32'h0;
-        else
-            cycle_count <= cycle_count + 1;
+        if (rst) cycle_count <= 32'h0;
+        else      cycle_count <= cycle_count + 1;
     end
 
     always @(posedge clk or posedge rst) begin
-        if (rst)
-            stall_count <= 32'h0;
-        else if (stall)
-            stall_count <= stall_count + 1;
+        if (rst)       stall_count <= 32'h0;
+        else if (stall) stall_count <= stall_count + 1;
     end
 
     wire wb_valid = (MEM_WB_reg_write && (MEM_WB_rd != 5'h0)) || MEM_WB_mem_write;
     always @(posedge clk or posedge rst) begin
-        if (rst)
-            instr_count <= 32'h0;
-        else if (wb_valid)
-            instr_count <= instr_count + 1;
+        if (rst)          instr_count <= 32'h0;
+        else if (wb_valid) instr_count <= instr_count + 1;
     end
 
     always @(posedge clk or posedge rst) begin
         if (rst) begin
-            branch_count <= 32'h0;
+            branch_count     <= 32'h0;
             mispredict_count <= 32'h0;
         end else begin
             if (ID_EX_branch || ID_EX_jal || ID_EX_jalr) begin
@@ -576,7 +590,9 @@ module pipeline_cpu(
         end
     end
 
-    // ── Main Memory ───────────────────────────────────────────
+    // ============================================================
+    // MAIN MEMORY
+    // ============================================================
     main_memory main_mem(
         .clk    (clk),
         .rst    (rst),
