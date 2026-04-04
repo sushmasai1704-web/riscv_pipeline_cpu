@@ -8,106 +8,101 @@ module simple_cpu(
     reg [31:0] instr_mem[0:31];
     integer i;
 
-    // Pipeline registers
     reg [31:0] IF_ID_instr, IF_ID_PC;
-    reg [4:0] ID_EX_rd;
-    reg [31:0] ID_EX_PC;
-    reg ID_EX_jal;
+    reg [4:0]  ID_EX_rd, ID_EX_rs1, ID_EX_rs2;
     reg [31:0] ID_EX_rs1_val, ID_EX_rs2_val;
+    reg [31:0] ID_EX_imm;
+    reg        ID_EX_addi;
+    reg [4:0]  EX_MEM_rd;
+    reg [31:0] EX_MEM_out;
+    reg [4:0]  MEM_WB_rd;
+    reg [31:0] MEM_WB_data;
 
-    reg [4:0] EX_rd;
-    reg [31:0] EX_PC, EX_out;
-    reg EX_jal;
+    function [31:0] ADDI;
+        input [4:0] rd, rs1; input [11:0] imm;
+        ADDI = {imm, rs1, 3'b000, rd, 7'b0010011};
+    endfunction
+    function [31:0] ADD;
+        input [4:0] rd, rs1, rs2;
+        ADD = {7'b0000000, rs2, rs1, 3'b000, rd, 7'b0110011};
+    endfunction
 
-    reg [4:0] MEM_rd;
-    reg [31:0] MEM_out;
-    reg MEM_jal;
-
-    reg [4:0] WB_rd;
-    reg [31:0] WB_data;
-    reg WB_jal;
-
-    // -------------------- Initialization --------------------
     initial begin
         PC = 0;
         for(i=0;i<32;i=i+1) regs[i]=0;
         for(i=0;i<32;i=i+1) instr_mem[i]=0;
-
-        // Sample instructions
-        instr_mem[0]=32'b00000000100000000000001011101111; // JAL x5,+8
-        instr_mem[1]=32'b00000000010101010000001110110011; // ADD x6,x5,x5
-        instr_mem[2]=32'b00000000011001100000010000010011; // ADDI x8,x6,6
-
+        instr_mem[0]  = ADDI(5'd1,  5'd0, 12'd10);
+        instr_mem[1]  = ADDI(5'd2,  5'd0, 12'd20);
+        instr_mem[2]  = ADDI(5'd3,  5'd0, 12'd5);
+        instr_mem[3]  = ADD (5'd4,  5'd1, 5'd2);
+        instr_mem[4]  = ADD (5'd5,  5'd4, 5'd3);
+        instr_mem[5]  = ADDI(5'd6,  5'd5, 12'd100);
+        instr_mem[6]  = ADD (5'd7,  5'd1, 5'd3);
+        instr_mem[7]  = ADDI(5'd8,  5'd7, 12'd7);
+        instr_mem[8]  = ADD (5'd9,  5'd6, 5'd8);
+        instr_mem[9]  = ADDI(5'd10, 5'd0, 12'd42);
+        instr_mem[10] = ADDI(5'd0,  5'd0, 12'd0);
         IF_ID_instr=0; IF_ID_PC=0;
-        ID_EX_rd=0; ID_EX_PC=0; ID_EX_jal=0;
-        ID_EX_rs1_val=0; ID_EX_rs2_val=0;
-        EX_rd=0; EX_PC=0; EX_jal=0; EX_out=0;
-        MEM_rd=0; MEM_out=0; MEM_jal=0;
-        WB_rd=0; WB_data=0; WB_jal=0;
+        ID_EX_rd=0; ID_EX_rs1=0; ID_EX_rs2=0;
+        ID_EX_rs1_val=0; ID_EX_rs2_val=0; ID_EX_imm=0; ID_EX_addi=0;
+        EX_MEM_rd=0; EX_MEM_out=0;
+        MEM_WB_rd=0; MEM_WB_data=0;
     end
 
-    // -------------------- Forwarding wires (combinational) --------------------
-    wire [31:0] rs1_val = (IF_ID_instr[19:15]==EX_rd && EX_rd!=0) ? EX_out :
-                           (IF_ID_instr[19:15]==MEM_rd && MEM_rd!=0) ? MEM_out :
-                           regs[IF_ID_instr[19:15]];
+    wire [4:0]  dec_rd   = IF_ID_instr[11:7];
+    wire [4:0]  dec_rs1  = IF_ID_instr[19:15];
+    wire [4:0]  dec_rs2  = IF_ID_instr[24:20];
+    wire [31:0] dec_imm  = {{20{IF_ID_instr[31]}}, IF_ID_instr[31:20]};
+    wire        dec_addi = (IF_ID_instr[6:0] == 7'b0010011);
 
-    wire [31:0] rs2_val = (IF_ID_instr[24:20]==EX_rd && EX_rd!=0) ? EX_out :
-                           (IF_ID_instr[24:20]==MEM_rd && MEM_rd!=0) ? MEM_out :
-                           regs[IF_ID_instr[24:20]];
+    wire [31:0] ex_rs1 =
+        (ID_EX_rs1 != 0 && ID_EX_rs1 == EX_MEM_rd)  ? EX_MEM_out  :
+        (ID_EX_rs1 != 0 && ID_EX_rs1 == MEM_WB_rd)  ? MEM_WB_data :
+        ID_EX_rs1_val;
+    wire [31:0] ex_rs2 =
+        (ID_EX_rs2 != 0 && ID_EX_rs2 == EX_MEM_rd)  ? EX_MEM_out  :
+        (ID_EX_rs2 != 0 && ID_EX_rs2 == MEM_WB_rd)  ? MEM_WB_data :
+        ID_EX_rs2_val;
+    wire [31:0] alu_out = ID_EX_addi ? ex_rs1 + ID_EX_imm : ex_rs1 + ex_rs2;
 
-    // -------------------- Pipeline --------------------
+    wire [31:0] id_rs1 =
+        (dec_rs1 != 0 && dec_rs1 == MEM_WB_rd) ? MEM_WB_data : regs[dec_rs1];
+    wire [31:0] id_rs2 =
+        (dec_rs2 != 0 && dec_rs2 == MEM_WB_rd) ? MEM_WB_data : regs[dec_rs2];
+
     always @(posedge clk) begin
         if(rst) begin
             PC <= 0;
             IF_ID_instr<=0; IF_ID_PC<=0;
-            ID_EX_rd<=0; ID_EX_PC<=0; ID_EX_jal<=0;
-            ID_EX_rs1_val<=0; ID_EX_rs2_val<=0;
-            EX_rd<=0; EX_PC<=0; EX_jal<=0; EX_out<=0;
-            MEM_rd<=0; MEM_out<=0; MEM_jal<=0;
-            WB_rd<=0; WB_data<=0; WB_jal<=0;
+            ID_EX_rd<=0; ID_EX_rs1<=0; ID_EX_rs2<=0;
+            ID_EX_rs1_val<=0; ID_EX_rs2_val<=0; ID_EX_imm<=0; ID_EX_addi<=0;
+            EX_MEM_rd<=0; EX_MEM_out<=0;
+            MEM_WB_rd<=0; MEM_WB_data<=0;
             for(i=0;i<32;i=i+1) regs[i]=0;
         end
         else begin
-            // -------- WB stage --------
-            if(WB_rd != 0)
-                regs[WB_rd] <= WB_data;
-
-            // -------- MEM stage --------
-            MEM_rd <= EX_rd;
-            MEM_out <= EX_out;
-            MEM_jal <= EX_jal;
-
-            // -------- EX stage --------
-            EX_rd <= ID_EX_rd;
-            EX_PC <= ID_EX_PC;
-            EX_jal <= ID_EX_jal;
-            EX_out <= EX_jal ? ID_EX_PC + 4 : ID_EX_rs1_val + ID_EX_rs2_val;
-
-            // -------- ID stage --------
-            ID_EX_rd <= IF_ID_instr[11:7];               // rd
-            ID_EX_PC <= IF_ID_PC;
-            ID_EX_jal <= (IF_ID_instr[6:0]==7'b1101111); // JAL opcode
-            ID_EX_rs1_val <= rs1_val;
-            ID_EX_rs2_val <= rs2_val;
-
-            // -------- IF stage --------
+            if(MEM_WB_rd != 0) regs[MEM_WB_rd] <= MEM_WB_data;
+            MEM_WB_rd   <= EX_MEM_rd;
+            MEM_WB_data <= EX_MEM_out;
+            EX_MEM_rd   <= ID_EX_rd;
+            EX_MEM_out  <= alu_out;
+            ID_EX_rd      <= dec_rd;
+            ID_EX_rs1     <= dec_rs1;
+            ID_EX_rs2     <= dec_rs2;
+            ID_EX_rs1_val <= id_rs1;
+            ID_EX_rs2_val <= id_rs2;
+            ID_EX_imm     <= dec_imm;
+            ID_EX_addi    <= dec_addi;
             IF_ID_instr <= instr_mem[PC>>2];
-            IF_ID_PC <= PC;
-
-            // -------- PC update --------
-            PC <= EX_jal ? EX_PC + 8 : PC + 4;
-
-            // -------- WB stage assignment --------
-            WB_rd <= MEM_rd;
-            WB_data <= MEM_out;
-            WB_jal <= MEM_jal;
+            IF_ID_PC    <= PC;
+            PC          <= PC + 4;
         end
     end
 
-    // -------------------- Monitor --------------------
     always @(posedge clk) begin
         if(!rst)
-            $display("PC=%d, x5=%d, x6=%d, x8=%d", PC, regs[5], regs[6], regs[8]);
+            $display("t=%4t PC=%3d | x1=%3d x2=%3d x3=%3d x4=%3d x5=%3d x6=%3d x7=%3d x8=%3d x9=%3d x10=%3d",
+                $time, PC, regs[1], regs[2], regs[3], regs[4],
+                regs[5], regs[6], regs[7], regs[8], regs[9], regs[10]);
     end
-
 endmodule
